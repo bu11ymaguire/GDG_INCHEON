@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 요리법 추천 앱 - UI 목업</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        /* 간단한 로딩 애니메이션 */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #fb923c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 화면 전환 효과 */
+        .screen {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- 모바일 앱 프레임 -->
+    <div class="w-full max-w-sm h-[750px] bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-gray-800 flex flex-col">
+        
+        <!-- 상단 바 -->
+        <header class="bg-white p-4 border-b flex justify-between items-center z-10 shadow-sm">
+            <h1 class="text-xl font-bold text-gray-800">🧑‍🍳 AI 요리사</h1>
+            <div class="w-6 h-6"></div> <!-- 오른쪽 정렬을 위한 공간 -->
+        </header>
+
+        <!-- 앱 콘텐츠 영역 -->
+        <main class="flex-grow overflow-y-auto">
+            <!-- 화면 1: 재료 입력 -->
+            <div id="screen-input" class="screen p-6 flex flex-col h-full">
+                <div class="flex-grow">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-2">어떤 재료를 가지고 계신가요?</h2>
+                    <p class="text-gray-500 mb-4">냉장고 속 재료를 입력해주세요.</p>
+                    
+                    <div class="bg-gray-50 p-3 rounded-lg border">
+                        <div class="flex items-center">
+                            <input id="ingredient-input" type="text" placeholder="예) 돼지고기, 김치, 양파" class="flex-grow bg-transparent focus:outline-none text-gray-700">
+                            <button id="add-ingredient-btn" class="bg-orange-400 text-white rounded-full w-8 h-8 flex items-center justify-center ml-2 flex-shrink-0">+</button>
+                        </div>
+                    </div>
+
+                    <div id="ingredient-tags" class="mt-4 flex flex-wrap gap-2">
+                        <!-- 태그가 여기에 추가됩니다 -->
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                         <button class="w-full bg-gray-100 text-gray-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 8a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" /></svg>
+                            카메라로 재료 추가
+                        </button>
+                        <button class="w-full bg-gray-100 text-gray-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4zm2 2v2h6V6H7zm0 4v2h6v-2H7zm0 4v2h6v-2H7z" /></svg>
+                            자주 쓰는 재료
+                        </button>
+                    </div>
+                </div>
+                <button id="find-recipe-btn" class="w-full bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-orange-600 transition-all duration-300 disabled:bg-gray-300">
+                    맛있는 레시피 찾기
+                </button>
+            </div>
+
+            <!-- 화면 2: AI 분석 중 (로딩) -->
+            <div id="screen-loading" class="screen p-6 flex flex-col items-center justify-center h-full">
+                <div class="loader"></div>
+                <p class="mt-6 text-lg font-medium text-gray-600">AI가 맛있는 요리법을 찾고 있어요!</p>
+                <p class="text-gray-500">최고의 조합을 분석 중입니다...</p>
+            </div>
+
+            <!-- 화면 3: 추천 레시피 목록 -->
+            <div id="screen-list" class="screen p-4">
+                <h2 class="text-2xl font-bold text-gray-800 px-2 mb-4">추천 레시피 🍳</h2>
+                <div class="space-y-4">
+                    <!-- 레시피 카드 1 -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer" onclick="showScreen('screen-detail')">
+                        <img src="https://placehold.co/600x300/F97316/FFFFFF?text=돼지고기+김치찌개" alt="돼지고기 김치찌개" class="w-full h-32 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg text-gray-800">돼지고기 김치찌개</h3>
+                            <p class="text-sm text-gray-500 mt-1">입력한 재료: 돼지고기, 김치, 양파</p>
+                            <div class="mt-3 flex justify-between items-center text-sm">
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">난이도: 초급</span>
+                                <span class="text-gray-600 font-medium">예상: 25분</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 레시피 카드 2 -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow cursor-pointer">
+                        <img src="https://placehold.co/600x300/10B981/FFFFFF?text=제육볶음" alt="제육볶음" class="w-full h-32 object-cover">
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg text-gray-800">매콤달콤 제육볶음</h3>
+                            <p class="text-sm text-gray-500 mt-1">입력한 재료: 돼지고기, 양파</p>
+                            <div class="mt-3 flex justify-between items-center text-sm">
+                                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">난이도: 중급</span>
+                                <span class="text-gray-600 font-medium">예상: 20분</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 화면 4: 레시피 상세 정보 -->
+            <div id="screen-detail" class="screen">
+                <div class="relative">
+                    <img src="https://placehold.co/600x400/F97316/FFFFFF?text=맛있는+김치찌개" alt="돼지고기 김치찌개 완성" class="w-full h-56 object-cover">
+                    <button onclick="showScreen('screen-list')" class="absolute top-4 left-4 bg-white/70 rounded-full p-2 text-gray-800 hover:bg-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                    </button>
+                </div>
+                <div class="p-5">
+                    <h2 class="text-3xl font-extrabold text-gray-800">돼지고기 김치찌개</h2>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-bold text-gray-700 border-l-4 border-orange-400 pl-2 mb-3">재료</h3>
+                        <div class="bg-green-50 border border-green-200 p-3 rounded-lg">
+                            <h4 class="font-semibold text-green-800">✅ 보유한 재료</h4>
+                            <p class="text-green-700">돼지고기, 김치, 양파</p>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mt-2">
+                            <h4 class="font-semibold text-yellow-800">💡 추가로 필요한 재료</h4>
+                            <p class="text-yellow-700">두부, 대파, 고춧가루</p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-bold text-gray-700 border-l-4 border-orange-400 pl-2 mb-3">요리 순서</h3>
+                        <ol class="space-y-4 text-gray-600">
+                            <li class="flex items-start"><span class="bg-orange-400 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 flex-shrink-0">1</span> <span>돼지고기와 김치를 냄비에 넣고 볶아주세요.</span></li>
+                            <li class="flex items-start"><span class="bg-orange-400 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 flex-shrink-0">2</span> <span>물을 붓고 양파와 고춧가루를 넣어 끓입니다.</span></li>
+                            <li class="flex items-start"><span class="bg-orange-400 text-white rounded-full w-6 h-6 text-sm flex items-center justify-center mr-3 flex-shrink-0">3</span> <span>두부와 대파를 넣고 한소끔 더 끓이면 완성!</span></li>
+                        </ol>
+                    </div>
+                    <div class="mt-6 bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-blue-800 flex items-center gap-2">🤖 AI의 요리 팁</h4>
+                        <p class="text-blue-700 mt-2">"더 깊은 맛을 원하시면 설탕을 반 스푼 넣어보세요. 감칠맛이 살아나요!"</p>
+                    </div>
+                </div>
+                <div class="p-4 bg-white border-t flex gap-3 sticky bottom-0">
+                    <button class="w-full bg-gray-200 text-gray-800 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors">내 레시피북에 저장</button>
+                    <button class="w-full bg-orange-500 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition-colors">공유하기</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    // --- DOM 요소 가져오기 ---
+    const screens = document.querySelectorAll('.screen');
+    const findRecipeBtn = document.getElementById('find-recipe-btn');
+    const ingredientInput = document.getElementById('ingredient-input');
+    const addIngredientBtn = document.getElementById('add-ingredient-btn');
+    const ingredientTagsContainer = document.getElementById('ingredient-tags');
+
+    let ingredients = [];
+
+    // --- 함수 정의 ---
+
+    // 화면 전환 함수
+    function showScreen(screenId) {
+        screens.forEach(screen => {
+            screen.style.display = 'none';
+        });
+        const activeScreen = document.getElementById(screenId);
+        if (activeScreen) {
+            activeScreen.style.display = 'block';
+            // 상세 화면일 경우 스크롤을 맨 위로
+            if (screenId === 'screen-detail') {
+                activeScreen.parentElement.scrollTop = 0;
+            }
+        }
+    }
+
+    // 재료 태그 렌더링 함수
+    function renderTags() {
+        ingredientTagsContainer.innerHTML = '';
+        ingredients.forEach((ingredient, index) => {
+            const tag = document.createElement('div');
+            tag.className = 'bg-orange-100 text-orange-700 text-sm font-medium px-3 py-1 rounded-full flex items-center gap-2';
+            tag.innerHTML = `
+                <span>${ingredient}</span>
+                <button data-index="${index}" class="remove-tag-btn text-orange-500 hover:text-orange-700">&times;</button>
+            `;
+            ingredientTagsContainer.appendChild(tag);
+        });
+        updateFindButtonState();
+    }
+    
+    // 재료 추가 함수
+    function addIngredient() {
+        const value = ingredientInput.value.trim();
+        if (value && !ingredients.includes(value)) {
+            ingredients.push(value);
+            ingredientInput.value = '';
+            renderTags();
+        }
+    }
+
+    // 재료 삭제 함수
+    function removeIngredient(index) {
+        ingredients.splice(index, 1);
+        renderTags();
+    }
+
+    // '레시피 찾기' 버튼 활성화/비활성화
+    function updateFindButtonState() {
+        findRecipeBtn.disabled = ingredients.length === 0;
+    }
+
+    // --- 이벤트 리스너 설정 ---
+
+    // '레시피 찾기' 버튼 클릭
+    findRecipeBtn.addEventListener('click', () => {
+        if (ingredients.length > 0) {
+            showScreen('screen-loading');
+            setTimeout(() => {
+                showScreen('screen-list');
+            }, 2000); // 2초 후 레시피 목록 표시
+        }
+    });
+
+    // 재료 추가 버튼 클릭
+    addIngredientBtn.addEventListener('click', addIngredient);
+
+    // Enter 키로 재료 추가
+    ingredientInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addIngredient();
+        }
+    });
+
+    // 재료 태그 삭제 (이벤트 위임)
+    ingredientTagsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-tag-btn')) {
+            const index = e.target.getAttribute('data-index');
+            removeIngredient(index);
+        }
+    });
+
+    // --- 초기화 ---
+    
+    // 초기 재료 설정 (예시)
+    ingredients = ['돼지고기', '김치', '양파'];
+    renderTags();
+    
+    // 첫 화면 표시
+    showScreen('screen-input');
+
+</script>
+
+</body>
+</html>
